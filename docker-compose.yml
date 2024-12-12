@@ -1,0 +1,32 @@
+services:
+  postgres-db:
+    image: postgres:16
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_DB=kong
+      - POSTGRES_PASSWORD=kong
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      # start_period: 30s
+    volumes:
+      # Delete this to start over
+      - ./postgres-data:/var/lib/postgresql/data
+  
+  kong-migrations:
+    image: kong:3.8-ubuntu
+    command: kong migrations bootstrap
+    profiles:
+      - setup
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=postgres-db
+      - KONG_PG_PASSWORD=kong
+    
+    depends_on:
+      - postgres-db
+
